@@ -7,6 +7,7 @@ const MongoStore = require('connect-mongo');
 const sessionsRouter = require('./routes/sessions');
 const viewsRouter = require('./routes/views');
 const User = require('./models/User');
+const { createHash } = require('../utils');
 
 const app = express();
 
@@ -17,6 +18,7 @@ mongoose.connect('mongodb+srv://omanias:1234562023@cluster0.3lmci0d.mongodb.net/
 
 
 app.use(bodyParser.urlencoded({ extended: true }));
+
 app.use(session({
     store: MongoStore.create({
         mongoUrl: 'mongodb+srv://omanias:1234562023@cluster0.3lmci0d.mongodb.net/?retryWrites=true&w=majority',
@@ -34,43 +36,46 @@ app.set("views", __dirname + '/views')
 app.set("view engine", "handlebars")
 
 
-app.use('/api/sessions', sessionsRouter);
+// app.use('/api/sessions', sessionsRouter);
 // app.use('/', viewsRouter);
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-app.post("/register", async (req, res) => {
-    try {
-        const { first_name, last_name, email, age, password } = req.body;
 
-        if (!first_name || !last_name || !email || !age || !password) {
-            return res.status(400).send('Faltan datos.');
-        }
-        let user = { first_name, last_name, email, age, password };
-        await user.save();
+app.post('/register', async (req, res) => {
+    let { first_name, last_name, email, age, password } = req.body;
 
-        console.log('Usuario creado con éxito.')
-
-        console.log(user)
-
-        res.redirect('/profile');
-    } catch (error) {
-        console.error('Error al registrar el usuario:', error);
-        res.status(500).send('Error al registrar el usuario.');
+    if (!first_name || !last_name || !email || !age || !password) {
+        return res.status(400).send('Faltan datos.');
     }
+
+    const hashedPassword = createHash(password);
+
+    let user = await User.create({
+        first_name,
+        last_name,
+        email,
+        age,
+        password: hashedPassword
+    });
+
+    res.send({ status: "success", payload: user });
+    console.log('Usuario registrado con éxito.' + user);
+    res.redirect('/login');
 });
+
 
 app.get('/profile', (req, res) => {
-    /*     if (!req.session.user) {
-            return res.redirect('/login');
-        } */
-    // const { first_name, last_name, email, age } = req.session.user;
-    res.render('profile', {}
-        // { first_name, last_name, email, age }
-    );
-
-    console.log('Usuario logueado con éxito.')
-
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+    const { first_name, last_name, email, age } = req.session.user;
+    console.log(first_name, last_name, email, age)
+    res.render('profile', { first_name, last_name, email, age });
+    console.log('Usuario logueado con éxito.');
 });
+
 
 
 app.get('/login', (req, res) => {
