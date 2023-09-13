@@ -16,7 +16,6 @@ mongoose.connect('mongodb+srv://omanias:1234562023@cluster0.3lmci0d.mongodb.net/
 });
 
 
-
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(session({
     store: MongoStore.create({
@@ -43,7 +42,10 @@ app.post("/register", async (req, res) => {
     try {
         const { first_name, last_name, email, age, password } = req.body;
 
-        const user = new User({ first_name, last_name, email, age, password });
+        if (!first_name || !last_name || !email || !age || !password) {
+            return res.status(400).send('Faltan datos.');
+        }
+        let user = { first_name, last_name, email, age, password };
         await user.save();
 
         console.log('Usuario creado con éxito.')
@@ -58,13 +60,13 @@ app.post("/register", async (req, res) => {
 });
 
 app.get('/profile', (req, res) => {
-    if (!req.session.user) {
-        return res.redirect('/login');
-    }
-
-
-    const { first_name, last_name, email, age } = req.session.user;
-    res.render('/profile', { first_name, last_name, email, age });
+    /*     if (!req.session.user) {
+            return res.redirect('/login');
+        } */
+    // const { first_name, last_name, email, age } = req.session.user;
+    res.render('profile', {}
+        // { first_name, last_name, email, age }
+    );
 
     console.log('Usuario logueado con éxito.')
 
@@ -72,12 +74,9 @@ app.get('/profile', (req, res) => {
 
 
 app.get('/login', (req, res) => {
-    // Check if the user is authenticated (you can replace this with your authentication logic)
     if (!req.session.user) {
-        // If the user is not authenticated, render the login page
         res.render('login');
     } else {
-        // If the user is authenticated, render the profile page
         res.render('/views/profile');
     }
 });
