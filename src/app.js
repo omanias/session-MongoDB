@@ -8,6 +8,8 @@ const sessionsRouter = require('./routes/sessions');
 const viewsRouter = require('./routes/views');
 const User = require('./models/User');
 const { createHash, isValidatePassword } = require('../utils');
+const passport = require("passport")
+const initializePassport = require("./config/passport.config")
 
 const app = express();
 
@@ -28,8 +30,10 @@ app.use(session({
     secret: 'coderhouse',
     resave: false,
     saveUninitialized: true,
-})
-);
+}));
+
+app.use(passport.initialize())
+app.use(passport.session())
 
 app.engine("handlebars", handlebars.engine())
 app.set("views", __dirname + '/views')
@@ -43,7 +47,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 
-app.post('/register', async (req, res) => {
+app.post('/register', passport.authenticate("register", { failureRedirect: "/failuregister" }), async (req, res) => {
     let { first_name, last_name, email, age, password } = req.body;
 
     if (!first_name || !last_name || !email || !age || !password) {
@@ -65,6 +69,10 @@ app.post('/register', async (req, res) => {
     console.log('Usuario registrado con éxito.' + user);
     // res.redirect('/login');
 });
+app.get("/failuregister", async (req, res) => {
+    console.log("Falla en autenticacion")
+    res.send({ error: "Falla" })
+})
 
 
 app.get('/profile', (req, res) => {
