@@ -7,7 +7,7 @@ const MongoStore = require('connect-mongo');
 const sessionsRouter = require('./routes/sessions');
 const viewsRouter = require('./routes/views');
 const User = require('./models/User');
-const { createHash } = require('../utils');
+const { createHash, isValidatePassword } = require('../utils');
 
 const app = express();
 
@@ -48,6 +48,7 @@ app.post('/register', async (req, res) => {
 
     if (!first_name || !last_name || !email || !age || !password) {
         return res.status(400).send('Faltan datos.');
+        // res.render('profile');
     }
 
     const hashedPassword = createHash(password);
@@ -62,7 +63,7 @@ app.post('/register', async (req, res) => {
 
     res.send({ status: "success", payload: user });
     console.log('Usuario registrado con éxito.' + user);
-    res.redirect('/login');
+    // res.redirect('/login');
 });
 
 
@@ -79,11 +80,14 @@ app.get('/profile', (req, res) => {
 
 
 app.get('/login', (req, res) => {
-    if (!req.session.user) {
-        res.render('login');
-    } else {
-        res.render('/views/profile');
-    }
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).send({ status: "error", error: "valores incorrectos" })
+    const user = User.findOne({ email: email }, { email: 1, first_name: 1, last_name: 1, password })
+    if (!user) return res.status(400).send({ status: "error", error: "usuario no encontrado" })
+    if (!isValidatePassword(user, password)) return res.status(403).send({ status: "error", error: "Password incorrecto" })
+    delete user.password
+    req.session.user = user
+    res.send({ status: "success", payload: user })
 });
 
 
