@@ -20,7 +20,7 @@ const initializePassport = () => {
                     last_name,
                     email,
                     age,
-                    passport: createHash(password)
+                    password: createHash(password)
                 }
                 let result = await userService.create(newUser)
                 return done(null, result)
@@ -29,6 +29,31 @@ const initializePassport = () => {
             }
         }
     ))
+
+    passport.serializeUser((user, done) => {
+        done(null, user._id)
+    })
+
+    passport.deserializeUser(async (id, done) => {
+        let user = await userService.findById(id)
+        done(null, user)
+    })
+
+    passport.use("login", new localStrategy({ usernameField: "email" }, async (username, password, done) => {
+        try {
+            const user = await userService.findOne({ email: username })
+            if (!user) {
+                return done(null, false)
+            }
+            if (!isValidatePassword(password, user.passport)) {
+                return done(null, false)
+            }
+
+        } catch (error) {
+            return done(error)
+        }
+    }))
 }
+
 
 module.exports = initializePassport
