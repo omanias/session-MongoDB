@@ -6,7 +6,8 @@ const handlebars = require('express-handlebars');
 const MongoStore = require('connect-mongo');
 const usersRouter = require('./routes/users.router');
 const passport = require("passport")
-const initializePassport = require("./config/passport.config")
+const initializePassport = require("./config/passport.config");
+const cookieParser = require('cookie-parser');
 
 const app = express();
 
@@ -23,7 +24,7 @@ app.use(session({
         mongoOptions: { useNewUrlParser: true, useUnifiedTopology: true },
         ttl: 600,
     }),
-    secret: 'coderhouse',
+    secret: 'coderSecret',
     resave: false,
     saveUninitialized: true,
 }));
@@ -31,6 +32,7 @@ app.use(session({
 initializePassport(passport)
 app.use(passport.initialize())
 app.use(passport.session())
+app.use(cookieParser())
 
 app.engine('handlebars', handlebars.engine())
 app.set('views', __dirname + '/views')

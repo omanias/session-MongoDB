@@ -3,6 +3,7 @@ const local = require("passport-local");
 const userService = require("../models/User");
 const { createHash, isValidatePassword } = require("../../utils");
 const GitHubStrategy = require("passport-github2")
+const jwt = require("passport-jwt")
 
 
 const localStrategy = local.Strategy;
@@ -43,7 +44,7 @@ const localStrategy = local.Strategy;
         )
     ); */
 
-const initializePassport = () => {
+/* const initializePassport = () => {
     passport.use("github", new GitHubStrategy({
         clientID: "Iv1.843f2f0502344391",
         clientSecret: "e9fe35e60e2c5c699520d44fee11dec5876fd63c",
@@ -102,6 +103,31 @@ const initializePassport = () => {
             }
         })
     );
-};
+}; */
+
+const cookieExtractor = req => {
+    let token = null
+    if (req && req.cookies) {
+        token = req.cookies["coderCookieToken"]
+    }
+    return token
+}
+
+const JWTStrategy = jwt.Strategy
+const ExtractJWT = jwt.ExtractJwt
+
+const initializePassport = () => {
+    passport.use("jwt", new JWTStrategy({
+        jwtFromRequest: ExtractJWT.fromExtractors([cookieExtractor]),
+        secretOrKey: "coderSecret"
+    }, async (jwt_payload, done) => {
+        try {
+            return done(null, jwt_payload)
+        } catch (err) {
+            return done(err)
+        }
+    }
+    ))
+}
 
 module.exports = initializePassport;

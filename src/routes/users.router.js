@@ -4,6 +4,7 @@ const router = express.Router();
 const usuario = require('../models/User');
 const { createHash, isValidatePassword } = require('../../utils');
 const passport = require("passport")
+const jwt = require("jsonwebtoken")
 
 
 router.get("/login", async (req, res) => {
@@ -52,7 +53,7 @@ router.get("/failregister", async (req, res) => {
     res.send({ error: "Falla" })
 })
 
-router.post("/login", async (req, res) => {
+/* router.post("/login", async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).render("login", { error: "Valores erroneos" });
 
@@ -76,7 +77,18 @@ router.post("/login", async (req, res) => {
 
     // Redirect the user after successful login
     res.redirect("/api/sessions/profile");
-});
+}); */
+
+router.post("/login", (req, res) => {
+    const { email, password } = req.body
+    if (email == "coder@coder.com" && password == "coderpass") {
+        let token = jwt.sign({ email, password }, "coderSecret", { expiresIn: "24h" })
+        res.cookie("coderCookieToken", token, {
+            maxAge: 60 * 60 * 1000,
+            httpOnly: true
+        }).send({ message: "Logueado existosamente" })
+    }
+})
 
 /*
 router.post("/login", passport.authenticate("login", { failureRedirect: "/faillogin" }), async (req, res) => {
@@ -109,6 +121,10 @@ router.get("/githubcallback", passport.authenticate("github", { failureRedirect:
     req.session.user = req.user
     res.redirect("/api/sessions/profile")
 
+})
+
+router.get("/current", passport.authenticate("jwt", { session: false }), (req, res) => {
+    res.send(req.user)
 })
 
 
